@@ -1,0 +1,202 @@
+<html>
+<head>
+    <script type="text/javascript" src="scripts/common-0.0.1.js"></script>
+</head>
+<style>
+    body {
+      font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;   
+    }
+    #wfhMain {
+      background-color: white;
+    }
+    #allContainer {
+      width: 35%;
+      height: 100%;
+      float: left;
+    }
+    #selectedContainer {
+      width: 60%;
+      max-width: 500px;
+      height: 100%;
+      float: left;
+    }
+    #nodeTbl, #nodeSelTbl {
+        font-size: smaller;
+        width: 100%;
+    }
+    #nodeTbl td, #nodeSelTbl td {
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+    .nodeRow, .selRow {
+        height: 36px;
+        max-height: 40px;
+        width: 100%;
+    }
+    .nIcon {
+      width:16px;
+      margin-top:1px;
+      margin-left:2px;
+      height:16px;
+      display: inline-block;
+      margin-right: 10px;
+    }
+    .j1 {
+        background: url(../images/icons16.png) 0px 0px;
+        height: 16px;
+        width: 16px;
+        border: none;
+    }
+    .j2 {
+        background: url(../images/icons16.png) -16px 0px;
+        height: 16px;
+        width: 16px;
+        border: none;
+    }
+    .j3 {
+        background: url(../images/icons16.png) -32px 0px;
+        height: 16px;
+        width: 16px;
+        border: none;
+    }
+    .j4 {
+        background: url(../images/icons16.png) -48px 0px;
+        height: 16px;
+        width: 16px;
+        border: none;
+    }
+    .j5 {
+        background: url(../images/icons16.png) -64px 0px;
+        height: 16px;
+        width: 16px;
+        border: none;
+    }
+    .j6 {
+        background: url(../images/icons16.png) -80px 0px;
+        height: 16px;
+        width: 16px;
+        border: none;
+    }
+    .ftype {
+        font-size: small;
+    }
+    .protoSel {
+        width: 100px;
+    }
+    .addMap, .removeMap, .setMine {
+        cursor: pointer;
+    }
+    .header {
+        font-weight: bold;
+        display: block;
+    }
+    .iheader {
+        font-weight: bold;
+    }
+    .otherInp {
+        width: 50px;
+    }
+    #addMap {
+        cursor: pointer;
+    }
+</style>
+<body onload="doOnLoad();">
+<div id="wfhMain">
+    <div id="selectedContainer">
+      <span class="header">Work Computer <span id="addMap" onclick="addMap();">[+]</span></span>
+      <table id="nodeSelTbl">
+      </table>
+    </div>
+</div>
+</body>
+<script type="text/javascript">
+var mappings = {{{mappings}}};
+var nodeMap = {};
+
+function doOnLoad() {
+    parent.nodes.forEach(function(n) {
+        nodeMap[n._id] = n;
+    });
+    updateSelTable();
+}
+function loadMyWorkComputer(msg) {
+    workComps = msg.data;
+}
+function addMap() {
+    var sWin = window.open('/pluginadmin.ashx?pin=workfromhome&user=1&pickNode=1', 'pickNode', "width=800,height=600");
+    sWin.nodes = parent.nodes;
+    sWin.meshes = parent.meshes;
+    sWin.currentNodeId = parent.currentNode._id;
+    window.nodeCallback = function(opts) {
+        parent.meshserver.send({
+            'action': 'plugin',
+            'plugin': 'workfromhome',
+            'pluginaction': 'addMap',
+            'fromNode': parent.currentNode._id,
+            'toNode': opts.toNode,
+            'user': parent.userinfo._id
+        });
+    };
+    
+}
+
+parent.pluginHandler.workfromhome.mapUpdate = function(state, msg) {
+    loadMappings(msg.data);
+};
+parent.pluginHandler.workfromhome.updateMapData = function(msg) {
+    loadMappings(msg.event.mapData);
+};
+function removeMap(el) {
+    var row = el.parentNode.parentNode, 
+        mapId = row.getAttribute('x-data-id');
+    if (mapId != null) {
+        parent.meshserver.send({
+            'action': 'plugin',
+            'plugin': 'workfromhome',
+            'pluginaction': 'removeMap',
+            'id': mapId,
+            'user': parent.userinfo._id
+        });
+    }
+}
+function loadMappings(msg) {
+    mappings = msg;
+    updateSelTable();
+}
+function protoChange(el) {
+    var row = el.parentNode.parentNode,
+        port = row.querySelectorAll('.otherInp')[0];
+    if (el.value == 'other') {
+        port.disabled = false;
+        port.value = '';
+    } else {
+        port.disabled = true;
+        port.value = el.value;
+    }
+}
+function resizeIframe() { 
+    document.body.style.height = 100;
+    parent.pluginHandler.workfromhome.resizeContent();
+}
+function updateSelTable() {
+  let dRows = document.querySelectorAll('.selRow');
+  dRows.forEach((r) => {
+      r.parentNode.removeChild(r);
+  });
+  Q('addMap').style.display = '';
+  var selTbl = document.querySelector('#nodeSelTbl');
+  if (mappings != null && mappings.length) {
+      Q('addMap').style.display = 'none';
+      mappings.forEach(function(i) {
+          var item = {...i, ...{}};
+          let tpl = `<td><div class="nIcon j${nodeMap[item.toNode].icon}"></div>${nodeMap[item.toNode].name}</td>
+            <td><a class="removeMap" onclick="removeMap(this);">Remove</td>`;
+          let tr = selTbl.insertRow(-1);
+          tr.innerHTML = tpl;
+          tr.setAttribute('x-data-id', item._id);
+          tr.classList.add('selRow');
+      });
+    }
+}
+</script>
+</html>

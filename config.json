@@ -1,0 +1,18 @@
+{
+  "name": "Work From Home",
+  "shortName": "workfromhome",
+  "version": "0.0.1",
+  "author": "Ryan Blenis",
+  "description": "RDP Map one agent to another.",
+  "hasAdminPanel": false,
+  "homepage": "https://github.com/ryanblenis/MeshCentral-WorkFromHome",
+  "changelogUrl": "https://raw.githubusercontent.com/ryanblenis/MeshCentral-WorkFromHome/master/changelog.md",
+  "configUrl": "https://raw.githubusercontent.com/ryanblenis/MeshCentral-WorkFromHome/master/config.json",
+  "downloadUrl": "https://github.com/ryanblenis/MeshCentral-WorkFromHome/archive/master.zip",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryanblenis/MeshCentral-WorkFromHome.git"
+  },
+  "versionHistoryUrl": "https://api.github.com/repos/ryanblenis/MeshCentral-WorkFromHome/tags",
+  "meshCentralCompat": ">=0.4.6-r"
+}
