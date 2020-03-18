@@ -123,14 +123,27 @@ function consoleaction(args, rights, sessionid, parent) {
         break;
     }
 }
+function getMacPath() {
+    var child = require('child_process').execFile('/bin/sh', ['sh'], { uid: require('user-sessions').consoleUid() });
+    child.stdout.str = '';
+    child.stdout.on('data', function (chunk) { this.str += chunk.toString(); });
+    child.stdin.write("echo ~\nexit\n");
+    child.waitExit();
 
+    var path = child.stdout.str.trim();
+    path += '/Desktop/Work_Computer.rdp';
+    return path;
+}
 function makeRDPShortcut(actualLocalPort) {
+    if (process.platform == 'linux') {
+        return; // N/A
+    }
     dbg('making rdp shortcut');
     var path = '\\Users\\Public\\Desktop\\Work_Computer.rdp';
-    if (process.platform != 'win32') {
-        // change path for non-win32
-        return;
+    if (process.platform == 'darwin') {
+        path = getMacPath();
     }
+    dbg('writing to path: ' + path);
     try {
         fs.writeFileSync(path, "full address:s:127.0.0.1:" + actualLocalPort);
     } catch (e) {
@@ -142,8 +155,7 @@ function deleteRDPShortcut() {
     dbg('deleting shortcut')
     var path = '\\Users\\Public\\Desktop\\Work_Computer.rdp';
     if (process.platform != 'win32') {
-        // change path for non-win32
-        return;
+        path = getMacPath();
     }
     try {
         fs.unlinkSync(path);

@@ -18,6 +18,6 @@ Restart your MeshCentral server after making this change.
 
 ## Usage Notes
 - This was created in a couple hours to help with the "work from home" rush the Coronavirus (COVID-19) is starting. There may be bugs.
-- Currently supports Windows clients only.
+- Currently supports Windows clients only (and macOS as the "Home" computer)
 - A file is placed on the computer "Work_Computer.rdp" that links to the chosen work computer.
 - While a similar outcome can be achieved from the the RoutePlus plugin. This requires no user access to MeshCentral. Administrators control the users RDP endpoint and a file is created for them on their desktop.
