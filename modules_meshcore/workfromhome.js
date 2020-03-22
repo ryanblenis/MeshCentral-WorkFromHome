@@ -15,6 +15,8 @@ var db = require('SimpleDataStore').Shared();
 var routeTrack = {};
 var debug_flag = false;
 var latestAuthCookie = null;
+var lastStartRouteCall = null;
+var waitTimer = null;
 
 var fs = require('fs');
 var os = require('os');
@@ -54,11 +56,29 @@ function consoleaction(args, rights, sessionid, parent) {
     
     switch (fnname) {
         case 'startRoute':
+            var nowTime = Math.floor(new Date() / 1000);
+            // check for multiple calls. The agentCoreIsStable hook calls in rapid succession when re-checking in
+            // This will avoid "stomping" on the setup process
+            if (lastStartRouteCall >= nowTime - 3 && args.waitTimer != 'y') {
+                dbg('Ignoring startRoute (called within the last 3 seconds)');
+                return;
+            }
+            lastStartRouteCall = nowTime;
+            
             // hold the unique mapId in memory in case a new packet is sent for recreation
             if (routeTrack[args.mid] != null && routeTrack[args.mid] != 'undefined') {
                 dbg('destroying connection to rebuild: ' + args.mid);
                 routeTrack[args.mid].tcpserver.close();
+                delete routeTrack[args.mid];
+                dbg('wait timer set');
+                args.waitTimer = 'y';
+                waitTimer = setInterval(function() { consoleaction(args, rights, sessionid, parent); }, 1000);
+                return;
+            } else {
+                dbg('No existing route found, continuing');
             }
+            if (waitTimer != null) clearTimeout(waitTimer);
+            dbg('Starting Route');
             latestAuthCookie = args.rauth;
             var r = new RoutePlusRoute();
             var settings = {
@@ -138,16 +158,27 @@ function makeRDPShortcut(actualLocalPort) {
     if (process.platform == 'linux') {
         return; // N/A
     }
-    dbg('making rdp shortcut');
+    dbg('checking rdp shortcut');
     var path = '\\Users\\Public\\Desktop\\Work_Computer.rdp';
     if (process.platform == 'darwin') {
         path = getMacPath();
     }
-    dbg('writing to path: ' + path);
+    var currentShortcutContents = null;
     try {
-        fs.writeFileSync(path, "full address:s:127.0.0.1:" + actualLocalPort);
-    } catch (e) {
-        dbg('error was '+e)
+        currentShortcutContents = fs.readFileSync(path, 'utf8').toString();
+    } catch (e) { }
+    
+    var fileContents = "full address:s:127.0.0.1:" + actualLocalPort;
+    
+    if (currentShortcutContents != fileContents) {
+        dbg('writing to path: ' + path);
+        try {
+            fs.writeFileSync(path, "full address:s:127.0.0.1:" + actualLocalPort);
+        } catch (e) {
+            dbg('error was '+e)
+        }
+    } else {
+        dbg('file contents have not changed. skipping write');
     }
 }
 
