@@ -67,6 +67,12 @@ function consoleaction(args, rights, sessionid, parent) {
             
             // hold the unique mapId in memory in case a new packet is sent for recreation
             if (routeTrack[args.mid] != null && routeTrack[args.mid] != 'undefined') {
+                try {
+                    if (args.localport == routeTrack[args.mid].tcpserver.address().port && routeTrack[args.mid].settings.remotenodeid == args.nodeid) {
+                        dbg('Start / rebuild command sent when data has not changed and already listening. Leaving in tact and doing nothing.');
+                        return;
+                    }
+                } catch (e) { }
                 dbg('destroying connection to rebuild: ' + args.mid);
                 routeTrack[args.mid].tcpserver.close();
                 delete routeTrack[args.mid];

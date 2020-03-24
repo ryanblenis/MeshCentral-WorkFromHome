@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Known Issues]
 - None. Please feel free to submit an issue via [GitHub](https://github.com/ryanblenis/MeshCentral-WorkFromHome) if you find anything.
 
+## [0.0.5] - 2020-03-24
+### Fixed
+- Better checking of existing connection before tearing down and rebuilding a tunnel
+
 ## [0.0.4] - 2020-03-22
 ### Fixed
 - Fix re-instantiating tunnel multiple times on agent checkin / clear core actions causing tunnel to rebuild itself and change ports more than required (Issue #2)
