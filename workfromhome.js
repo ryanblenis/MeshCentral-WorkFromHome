@@ -77,7 +77,9 @@ module.exports.workfromhome = function (parent) {
             rauth: rcookie,
             nodeid: map.toNode,
             remoteport: map.port,
-            localport: map.localport
+            localport: map.localport,
+            rdplabel: map.rdplabel || "Work_Computer",
+            aadcompat: map.aadcompat || false
         };
         
         try { 
@@ -205,7 +207,7 @@ module.exports.workfromhome = function (parent) {
         switch (command.pluginaction) {
             case 'addMap':
                 var newMapId = null, myComp = null;
-                obj.db.addMap(command.user, command.fromNode, command.toNode)
+                obj.db.addMap(command.user, command.fromNode, command.toNode, command.rdplabel, command.aadcompat)
                 .then((newMapInfo) => {
                     newMapId = newMapInfo.insertedId;
                     return obj.db.getMaps(command.fromNode);
@@ -238,6 +240,38 @@ module.exports.workfromhome = function (parent) {
                     return obj.db.getMaps(mObj.fromNode);
                 })
                 .catch(e => console.log('PLUGIN: WorkFromHome: Error updating mapped port: ', e));
+            break;
+            case 'updateMapLabel':
+                obj.db.update(command.mid, { rdplabel: command.rdplabel })
+                .then(() => {
+                    return obj.db.get(command.mid);
+                })
+                .then((mObj) => {
+                    mObj = mObj[0];
+                    obj.updateFrontEnd({ fromNode: mObj.fromNode });
+                    
+                    var uinfo = mObj.user.split('/');
+                    var rcookie = parent.parent.encodeCookie({  userid: mObj.user, domainid: uinfo[1] }, obj.meshServer.loginCookieEncryptionKey);
+                    obj.startRoute(mObj.fromNode, mObj, rcookie);
+                    return Promise.resolve();
+                })
+                .catch(e => console.log('PLUGIN: WorkFromHome: Error updating RDP Label: ', e));
+            break;
+            case 'updateAadCompat':
+                obj.db.update(command.mid, { aadcompat: command.aadcompat })
+                .then(() => {
+                    return obj.db.get(command.mid);
+                })
+                .then((mObj) => {
+                    mObj = mObj[0];
+                    obj.updateFrontEnd({ fromNode: mObj.fromNode });
+                    
+                    var uinfo = mObj.user.split('/');
+                    var rcookie = parent.parent.encodeCookie({  userid: mObj.user, domainid: uinfo[1] }, obj.meshServer.loginCookieEncryptionKey);
+                    obj.startRoute(mObj.fromNode, mObj, rcookie);
+                    return Promise.resolve();
+                })
+                .catch(e => console.log('PLUGIN: WorkFromHome: Error updating RDP Label: ', e));
             break;
             default:
                 console.log('PLUGIN: WorkFromHome: unknown action');

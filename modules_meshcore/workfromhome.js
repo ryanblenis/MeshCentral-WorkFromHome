@@ -68,7 +68,7 @@ function consoleaction(args, rights, sessionid, parent) {
             // hold the unique mapId in memory in case a new packet is sent for recreation
             if (routeTrack[args.mid] != null && routeTrack[args.mid] != 'undefined') {
                 try {
-                    if (args.localport == routeTrack[args.mid].tcpserver.address().port && routeTrack[args.mid].settings.remotenodeid == args.nodeid) {
+                    if (args.localport == routeTrack[args.mid].tcpserver.address().port && routeTrack[args.mid].settings.remotenodeid == args.nodeid && routeTrack[args.mid].settings.rdplabel == args.rdplabel && routeTrack[args.mid].settings.aadcompat == args.aadcompat) {
                         dbg('Start / rebuild command sent when data has not changed and already listening. Leaving in tact and doing nothing.');
                         return;
                     }
@@ -91,7 +91,9 @@ function consoleaction(args, rights, sessionid, parent) {
                 serverurl: mesh.ServerUrl.replace('agent.ashx', 'meshrelay.ashx'),
                 remotenodeid: args.nodeid,
                 remoteport: 3389, //args.remoteport,
-                localport: args.localport == null ? 0 : args.localport
+                localport: args.localport == null ? 0 : args.localport,
+                rdplabel: args.rdplabel,
+                aadcompat: args.aadcompat
             };
             var was_error = false;
             try {
@@ -121,14 +123,23 @@ function consoleaction(args, rights, sessionid, parent) {
                     "port": actualLocalPort
                 });
             }
-            makeRDPShortcut(actualLocalPort);
+            var curMapLink = getMapLink(args.mid);
+            if (curMapLink != null && curMapLink != args.rdplabel) {
+                try {
+                    deleteRDPShortcut(curMapLink);
+                } catch (e) { }
+            }
+            putMapLink(args.mid, args.rdplabel);
+            makeRDPShortcut(actualLocalPort, args.rdplabel, args.aadcompat);
         break;
         case 'endRoute':
             if (routeTrack[args.mid] != null && routeTrack[args.mid] != 'undefined') {
                 dbg('Ending route for ' + args.mid)
                 routeTrack[args.mid].tcpserver.close();
                 delete routeTrack[args.mid];
-                deleteRDPShortcut();
+                var curMapLink = getMapLink(args.mid)
+                removeMapLink(args.mid);
+                deleteRDPShortcut(curMapLink);
             }
         break;
         case 'updateCookie':
@@ -144,12 +155,17 @@ function consoleaction(args, rights, sessionid, parent) {
             if (s == '') s = 'No active port mappings';
             return s;
         break;
+        case 'listrdpmaps':
+            var x = getMapLinks();
+            x = JSON.stringify(x);
+            return x;
+        break;
         default:
             dbg('Unknown action: '+ fnname + ' with data ' + JSON.stringify(args));
         break;
     }
 }
-function getMacPath() {
+function getMacPath(rdplabel) {
     var child = require('child_process').execFile('/bin/sh', ['sh'], { uid: require('user-sessions').consoleUid() });
     child.stdout.str = '';
     child.stdout.on('data', function (chunk) { this.str += chunk.toString(); });
@@ -157,17 +173,18 @@ function getMacPath() {
     child.waitExit();
 
     var path = child.stdout.str.trim();
-    path += '/Desktop/Work_Computer.rdp';
+    path += '/Desktop/' + rdplabel + '.rdp';
     return path;
 }
-function makeRDPShortcut(actualLocalPort) {
+function makeRDPShortcut(actualLocalPort, rdplabel, aad) {
     if (process.platform == 'linux') {
         return; // N/A
     }
+    if (rdplabel == null) rdplabel = 'Work_Computer';
     dbg('checking rdp shortcut');
-    var path = '\\Users\\Public\\Desktop\\Work_Computer.rdp';
+    var path = '\\Users\\Public\\Desktop\\' + rdplabel + '.rdp';
     if (process.platform == 'darwin') {
-        path = getMacPath();
+        path = getMacPath(rdplabel);
     }
     var currentShortcutContents = null;
     try {
@@ -176,10 +193,15 @@ function makeRDPShortcut(actualLocalPort) {
     
     var fileContents = "full address:s:127.0.0.1:" + actualLocalPort;
     
+    if (aad) {
+        fileContents += "\r\nenablecredsspsupport:i:0"
+        + "\r\nauthentication level:i:2";
+    }
+    
     if (currentShortcutContents != fileContents) {
         dbg('writing to path: ' + path);
         try {
-            fs.writeFileSync(path, "full address:s:127.0.0.1:" + actualLocalPort);
+            fs.writeFileSync(path, fileContents);
         } catch (e) {
             dbg('error was '+e)
         }
@@ -188,11 +210,13 @@ function makeRDPShortcut(actualLocalPort) {
     }
 }
 
-function deleteRDPShortcut() {
+function deleteRDPShortcut(rdplabel) {
+    if (rdplabel == null || rdplabel == 'undefined') rdplabel = 'Work_Computer';
+    
     dbg('deleting shortcut')
-    var path = '\\Users\\Public\\Desktop\\Work_Computer.rdp';
+    var path = '\\Users\\Public\\Desktop\\' + rdplabel + '.rdp';
     if (process.platform != 'win32') {
-        path = getMacPath();
+        path = getMacPath(rdplabel);
     }
     try {
         fs.unlinkSync(path);
@@ -280,6 +304,34 @@ function OnWebSocket(msg, s, head) {
     s.on('error', function (msg) { disconnectTunnel(this.tcp, this, 'Websocket error'); });
     s.on('close', function (msg) { disconnectTunnel(this.tcp, this, 'Websocket closed'); });
     s.parent = this;
+}
+
+function getMapLinks() {
+    var o = db.Get('plugin_WorkFromHome_rdplinks');
+    if (o == '' || o == null) return {};
+    try {
+        o = JSON.parse(o);
+    } catch (e) { return {}; }
+    return o;
+}
+function getMapLink(mapId) {
+    var ml = getMapLinks();
+    if (ml[mapId]) {
+        return ml[mapId];
+    } else {
+        return null;
+    }
+}
+function removeMapLink(mapId) {
+    var ml = getMapLinks();
+    try { delete ml[mapId]; } catch(e) { }
+    db.Put('plugin_WorkFromHome_rdplinks', ml);
+}
+function putMapLink(mapId, linkName) {
+    removeMapLink(mapId);
+    var ml = getMapLinks();
+    ml[mapId] = linkName;
+    db.Put('plugin_WorkFromHome_rdplinks', ml);
 }
 
 function sendConsoleText(text, sessionid) {

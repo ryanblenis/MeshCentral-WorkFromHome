@@ -117,6 +117,7 @@
     <div id="selectedContainer">
       <span class="header">Work Computer <span id="addMap" onclick="addMap();">[+]</span></span>
       <table id="nodeSelTbl">
+          <th>Node</th><th>Shortcut Label</th><th>AAD</th><th>Action</th>
       </table>
     </div>
 </div>
@@ -131,9 +132,6 @@ function doOnLoad() {
     });
     updateSelTable();
 }
-function loadMyWorkComputer(msg) {
-    workComps = msg.data;
-}
 function addMap() {
     var sWin = window.open('/pluginadmin.ashx?pin=workfromhome&user=1&pickNode=1', 'pickNode', "width=800,height=600");
     sWin.nodes = parent.nodes;
@@ -146,7 +144,9 @@ function addMap() {
             'pluginaction': 'addMap',
             'fromNode': parent.currentNode._id,
             'toNode': opts.toNode,
-            'user': parent.userinfo._id
+            'user': parent.userinfo._id,
+            'rdplabel': 'WFH-' + parent.nodes.filter(o => { return o._id == opts.toNode })[0]['name'],
+            'aadcompat': false
         });
     };
     
@@ -195,20 +195,70 @@ function updateSelTable() {
   dRows.forEach((r) => {
       r.parentNode.removeChild(r);
   });
-  Q('addMap').style.display = '';
   var selTbl = document.querySelector('#nodeSelTbl');
   if (mappings != null && mappings.length) {
-      Q('addMap').style.display = 'none';
       mappings.forEach(function(i) {
           var item = {...i, ...{}};
+          if (item.aadcompat) item.aadHtml = ' checked'; else item.aadHtml = '';
           let tpl = `<td><div class="nIcon j${nodeMap[item.toNode].icon}"></div>${nodeMap[item.toNode].name}</td>
+            <td><span onclick="editLabel(this)" class="rdplabel">${item.rdplabel || "Work_Computer"}</span></td>
+            <td><input onchange="updateMapAad(this)" type="checkbox" class="aadcompat" ${item.aadHtml} /></td>
             <td><a class="removeMap" onclick="removeMap(this);">Remove</td>`;
           let tr = selTbl.insertRow(-1);
           tr.innerHTML = tpl;
           tr.setAttribute('x-data-id', item._id);
           tr.classList.add('selRow');
       });
-    }
+  }
+}
+function updateMapAad(el) {
+    var mapId = el.parentNode.parentNode.getAttribute('x-data-id');
+    var val = el.checked;
+    parent.meshserver.send({
+        'action': 'plugin',
+        'plugin': 'workfromhome',
+        'pluginaction': 'updateAadCompat',
+        'mid': mapId,
+        'aadcompat': val
+    });
+}
+function updateMapRdpLabel(mapId, val) {
+    parent.meshserver.send({
+        'action': 'plugin',
+        'plugin': 'workfromhome',
+        'pluginaction': 'updateMapLabel',
+        'mid': mapId,
+        'rdplabel': val
+    });
+}
+function editLabel(el) {
+    if (el.getAttribute('x-is-editing') == 'true') return;
+    el.setAttribute('x-is-editing', 'true');
+    var before = el.innerHTML;
+    var inp = document.createElement('input');
+    inp.classList.add('rdplabelinp');
+    inp.value = before;
+    inp.addEventListener('blur', function(e) {
+        if (before != this.value) {
+            updateMapRdpLabel(el.parentNode.parentNode.getAttribute('x-data-id'), this.value); 
+        } else {
+            updateSelTable();
+        }
+    }, false);
+    inp.addEventListener('keyup', function(e) {
+        if (e.which == 13 || e.keyCode == 13) {
+            if (before != this.value) {
+                updateMapRdpLabel(el.parentNode.parentNode.getAttribute('x-data-id'), this.value);
+                return false;
+            } else {
+                updateSelTable();
+            }
+        }
+        return false;
+    }, false);
+    el.innerHTML = '';
+    el.append(inp);
+    inp.focus();
 }
 </script>
 </html>

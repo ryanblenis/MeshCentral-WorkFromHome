@@ -45,7 +45,7 @@ module.exports.CreateDB = function(meshserver) {
         obj.getMaps = function(nodeId) {
             return obj.file.find( { fromNode: nodeId, type: 'portMap' } ).toArray();
         };
-        obj.addMap = function(user, fromNode, toNode) {
+        obj.addMap = function(user, fromNode, toNode, rdplabel, aadcompat) {
             return obj.file.insertOne( {
                 type: 'portMap',
                 fromNode: fromNode,
@@ -53,7 +53,9 @@ module.exports.CreateDB = function(meshserver) {
                 port: 3389,
                 localport: 0,
                 auto: false,
-                user: user
+                user: user,
+                rdplabel: rdplabel,
+                aadcompat: aadcompat
             });
         };
         obj.getAllMaps = function (nodeScope) {
