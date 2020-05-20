@@ -14,10 +14,10 @@ Restart your MeshCentral server after making this change.
  `https://raw.githubusercontent.com/ryanblenis/MeshCentral-WorkFromHome/master/config.json`
 
 ## Features
-- Set a user's "Work" PC as an option in the "Home" PC to create an RDP link via MeshCentral to the "Work" PC.
+- Set a user's "Work" PC(s) as an option in the "Home" PC to create an RDP link via MeshCentral to the "Work" PC(s).
 
 ## Usage Notes
-- This was created in a couple hours to help with the "work from home" rush the Coronavirus (COVID-19) is starting. There may be bugs.
 - Currently supports Windows clients only (and macOS as the "Home" computer)
-- A file is placed on the computer "Work_Computer.rdp" that links to the chosen work computer.
+- A file is placed on the computer "WFH-Work_Computer.rdp" that links to the chosen work computer(s).
 - While a similar outcome can be achieved from the the RoutePlus plugin. This requires no user access to MeshCentral. Administrators control the users RDP endpoint and a file is created for them on their desktop.
+- The AAD option is for AzureAD logins. This should only be enabled if the Work computer is signed into with an AzureAD login.

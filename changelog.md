@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Known Issues]
 - None. Please feel free to submit an issue via [GitHub](https://github.com/ryanblenis/MeshCentral-WorkFromHome) if you find anything.
 
+## [0.1.0] - 2020-05-19
+### Added
+- Ability to rename RDP file
+- Ability to add multiple work computers
+- AzureAD connection compatibility (for computers with MS ID's used for login)
+### Changed
+- Default RDP file name from "Work_Computer" to "WFH-CompName"
+### Fixed
+- Missing icons for RasPi and VM device types
+
 ## [0.0.5] - 2020-03-24
 ### Fixed
 - Better checking of existing connection before tearing down and rebuilding a tunnel
