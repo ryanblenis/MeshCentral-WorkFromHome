@@ -6,7 +6,6 @@
 */
 
 "use strict";
-require('promise');
 var Datastore = null;
 var formatId = null;
 
@@ -97,7 +96,7 @@ module.exports.CreateDB = function(meshserver) {
           obj.initFunctions();
     });  
     } else { // use NeDb
-        Datastore = require('nedb');
+        Datastore = require('@yetzt/nedb');
         if (obj.filex == null) {
             obj.filex = new Datastore({ filename: meshserver.getConfigFilePath('plugin-workfromhome.db'), autoload: true });
             obj.filex.persistence.setAutocompactionInterval(40000);
