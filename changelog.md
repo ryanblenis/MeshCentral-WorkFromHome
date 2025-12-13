@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Known Issues]
 - None. Please feel free to submit an issue via [GitHub](https://github.com/ryanblenis/MeshCentral-WorkFromHome) if you find anything.
 
+## [0.1.3] - 2025-12-13
+### Fixed
+- AgentPong interference drops
+- Compatibility with MeshCentral => 1.1.35
+
 ## [0.1.2] - 2022-03-12
 ### Fixed
 - Compatibility with MeshCentral => 0.9.98 (promise requirement removed from MeshCentral, nedb moved to @yetzt/nedb)
